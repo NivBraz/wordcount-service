@@ -1,0 +1,34 @@
+# Rate limiting settings
+rateLimit:
+  requestsPerSecond: 5
+  burst: 10
+
+# Number of concurrent goroutines for fetching articles
+concurrency: 4
+
+# URLs configuration
+urls:
+  # Path to the file containing article URLs
+  articleURLsFile: "endg-urls"
+  # URL for the word bank file
+  wordBankURL: "https://raw.githubusercontent.com/dwyl/english-words/master/words.txt"
+
+# HTTP client settings
+httpClient:
+  timeout: 30
+  maxRetries: 3
+  retryDelay: 5
+  userAgent: "WordCount-Service/1.0"
+
+# Output settings
+output:
+  topWordsCount: 10
+  includeStats: true
+  format: "json"
+  prettyPrint: true
+
+# Word processing settings
+wordProcessing:
+  minWordLength: 3
+  convertToLower: true
+  removeSpecialChars: true
