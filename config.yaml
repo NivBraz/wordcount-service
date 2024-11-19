@@ -1,10 +1,10 @@
 # Rate limiting settings
 rateLimit:
-  requestsPerSecond: 5
-  burst: 10
+  requestsPerSecond: 2
+  burst: 5
 
 # Number of concurrent goroutines for fetching articles
-concurrency: 10
+concurrency: 8
 
 # URLs configuration
 urls:

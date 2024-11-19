@@ -1,4 +1,3 @@
-// internal/app/app.go
 package app
 
 import (
@@ -6,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/NivBraz/wordcount-service/internal/config"
@@ -13,6 +13,7 @@ import (
 	"github.com/NivBraz/wordcount-service/pkg/fetcher"
 	"github.com/NivBraz/wordcount-service/pkg/parser"
 	"github.com/NivBraz/wordcount-service/pkg/wordbank"
+	"github.com/schollz/progressbar/v3"
 )
 
 // App represents the main application
@@ -45,13 +46,27 @@ func New(cfg *config.Config) (*App, error) {
 	p := parser.New()
 	wb := wordbank.New()
 
-	// Initialize word bank
+	// Initialize word bank with progress bar
 	wordBankCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := initializeWordBank(wordBankCtx, f, p, wb, cfg.URLs.WordBankURL); err != nil {
+	fmt.Println("Initializing word bank...")
+	bar := progressbar.NewOptions(-1,
+		progressbar.OptionSetDescription("Loading word bank..."),
+		progressbar.OptionSetWidth(30),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "=",
+			SaucerHead:    ">",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}))
+
+	if err := initializeWordBank(wordBankCtx, f, p, wb, cfg.URLs.WordBankURL, bar); err != nil {
 		return nil, fmt.Errorf("failed to initialize word bank: %w", err)
 	}
+	bar.Finish()
 
 	return &App{
 		config:   cfg,
@@ -77,6 +92,24 @@ func (a *App) Run(ctx context.Context) (*models.Result, error) {
 	frequencies := make(map[string]int)
 	var freqMutex sync.RWMutex
 
+	// Initialize progress tracking
+	totalArticles := len(a.config.ArticleURLs)
+	var processedArticles int32
+
+	// Create progress bar for article processing
+	bar := progressbar.NewOptions(totalArticles,
+		progressbar.OptionSetDescription("Processing articles..."),
+		progressbar.OptionSetWidth(30),
+		progressbar.OptionShowCount(),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "=",
+			SaucerHead:    ">",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}))
+
 	// Start word processing goroutine
 	processWg.Add(1)
 	go func() {
@@ -84,7 +117,6 @@ func (a *App) Run(ctx context.Context) (*models.Result, error) {
 		for word := range wordChan {
 			if isValidWord(word) && a.wordBank.Contains(word) {
 				freqMutex.Lock()
-				//fmt.Println("word: ", word)
 				frequencies[word]++
 				freqMutex.Unlock()
 			}
@@ -107,6 +139,10 @@ func (a *App) Run(ctx context.Context) (*models.Result, error) {
 				log.Printf("Error processing article %s: %v", url, err)
 				errChan <- fmt.Errorf("failed to process %s: %w", url, err)
 			}
+
+			// Update progress
+			atomic.AddInt32(&processedArticles, 1)
+			bar.Add(1)
 		}(url)
 	}
 
@@ -115,6 +151,7 @@ func (a *App) Run(ctx context.Context) (*models.Result, error) {
 		fetchWg.Wait()
 		close(wordChan)
 		close(errChan)
+		bar.Finish()
 	}()
 
 	// Wait for word processing to complete
@@ -148,15 +185,12 @@ func (a *App) Run(ctx context.Context) (*models.Result, error) {
 // processArticle fetches and processes a single article
 func (a *App) processArticle(ctx context.Context, url string, wordChan chan<- string) error {
 	// Fetch article content
-	fmt.Println("fetching article: ", url)
 	content, err := a.fetcher.Fetch(ctx, url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch article: %w", err)
 	}
-	//fmt.Printf("fetched content: %s\n", content)
 
 	// Parse words from content
-	fmt.Println("parsing words")
 	words, err := a.parser.ParseWords(content)
 	if err != nil {
 		return fmt.Errorf("failed to parse article: %w", err)
@@ -192,7 +226,7 @@ func validateConfig(cfg *config.Config) error {
 	return nil
 }
 
-func initializeWordBank(ctx context.Context, f *fetcher.Fetcher, p *parser.Parser, wb *wordbank.WordBank, url string) error {
+func initializeWordBank(ctx context.Context, f *fetcher.Fetcher, p *parser.Parser, wb *wordbank.WordBank, url string, bar *progressbar.ProgressBar) error {
 	// Fetch word bank content
 	content, err := f.Fetch(ctx, url)
 	if err != nil {
@@ -207,8 +241,8 @@ func initializeWordBank(ctx context.Context, f *fetcher.Fetcher, p *parser.Parse
 
 	for _, word := range words {
 		wb.Add(word)
+		bar.Add(1)
 	}
-	fmt.Printf("word bank initialized with %d words\n", len(words))
 
 	return nil
 }

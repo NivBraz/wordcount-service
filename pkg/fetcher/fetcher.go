@@ -31,16 +31,16 @@ type FetcherConfig struct {
 	UserAgent          string
 }
 
-func NewFetcherConfig() FetcherConfig {
-	return FetcherConfig{
-		RequestsPerSecond:  2,
-		Burst:              1,
-		MinRequestInterval: 2 * time.Second,
-		MaxRequestInterval: 5 * time.Second,
-		Timeout:            30 * time.Second,
-		UserAgent:          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-	}
-}
+//func NewFetcherConfig() FetcherConfig {
+//	return FetcherConfig{
+//		RequestsPerSecond:  2,
+//		Burst:              1,
+//		MinRequestInterval: 2 * time.Second,
+//		MaxRequestInterval: 5 * time.Second,
+//		Timeout:            30 * time.Second,
+//		UserAgent:          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+//	}
+//}
 
 func New(config FetcherConfig) *Fetcher {
 	jar, _ := cookiejar.New(nil)
