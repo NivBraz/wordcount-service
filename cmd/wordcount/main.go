@@ -38,12 +38,11 @@ func main() {
 	fmt.Println("Running application...")
 	results, err := application.Run(ctx)
 	if err != nil {
-		log.Fatalf("Application error: %v", err)
+		log.Printf("Erors that occurred during the application run: %v", err)
 	}
 	fmt.Println("Application completed")
 
 	// Output results as JSON
-	fmt.Printf("Results: %+v\n", results)
 	output, err := json.MarshalIndent(results, "", "    ")
 	if err != nil {
 		log.Fatalf("Failed to marshal results: %v", err)

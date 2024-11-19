@@ -30,13 +30,26 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	// Create fetcher config
+	fetcherConfig := fetcher.FetcherConfig{
+		RequestsPerSecond:  cfg.RateLimit.RequestsPerSecond,
+		Burst:              cfg.RateLimit.Burst,
+		MinRequestInterval: 2 * time.Second,
+		MaxRequestInterval: 5 * time.Second,
+		Timeout:            time.Duration(cfg.HTTPClient.Timeout) * time.Second,
+		UserAgent:          cfg.HTTPClient.UserAgent,
+	}
+
 	// Initialize components
-	f := fetcher.New(cfg.RateLimit.RequestsPerSecond, cfg.RateLimit.Burst)
+	f := fetcher.New(fetcherConfig)
 	p := parser.New()
 	wb := wordbank.New()
 
 	// Initialize word bank
-	if err := initializeWordBank(context.Background(), f, p, wb, cfg.URLs.WordBankURL); err != nil {
+	wordBankCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := initializeWordBank(wordBankCtx, f, p, wb, cfg.URLs.WordBankURL); err != nil {
 		return nil, fmt.Errorf("failed to initialize word bank: %w", err)
 	}
 
@@ -71,7 +84,7 @@ func (a *App) Run(ctx context.Context) (*models.Result, error) {
 		for word := range wordChan {
 			if isValidWord(word) && a.wordBank.Contains(word) {
 				freqMutex.Lock()
-				fmt.Println("word: ", word)
+				//fmt.Println("word: ", word)
 				frequencies[word]++
 				freqMutex.Unlock()
 			}
@@ -140,6 +153,7 @@ func (a *App) processArticle(ctx context.Context, url string, wordChan chan<- st
 	if err != nil {
 		return fmt.Errorf("failed to fetch article: %w", err)
 	}
+	//fmt.Printf("fetched content: %s\n", content)
 
 	// Parse words from content
 	fmt.Println("parsing words")
@@ -194,6 +208,7 @@ func initializeWordBank(ctx context.Context, f *fetcher.Fetcher, p *parser.Parse
 	for _, word := range words {
 		wb.Add(word)
 	}
+	fmt.Printf("word bank initialized with %d words\n", len(words))
 
 	return nil
 }

@@ -11,10 +11,8 @@ import (
 	"github.com/NivBraz/wordcount-service/internal/models"
 )
 
-// Parser represents a text parser
 type Parser struct{}
 
-// New creates a new Parser instance
 func New() *Parser {
 	return &Parser{}
 }
@@ -67,6 +65,22 @@ func (p *Parser) ParseWordBank(content []byte) ([]string, error) {
 	return words, nil
 }
 
+// cleanWord normalizes and cleans a word
+func cleanWord(word string) string {
+	// Convert to lowercase
+	word = strings.ToLower(word)
+
+	// Remove any remaining non-letter characters
+	word = strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) {
+			return r
+		}
+		return -1
+	}, word)
+
+	return strings.TrimSpace(word)
+}
+
 // IsAlphabetic checks if a string contains only alphabetic characters
 func IsAlphabetic(word string) bool {
 	for _, r := range word {
@@ -81,27 +95,8 @@ func IsAlphabetic(word string) bool {
 func SortWordCounts(words []models.WordCount) {
 	sort.Slice(words, func(i, j int) bool {
 		if words[i].Count == words[j].Count {
-			return words[i].Word < words[j].Word // Alphabetical for ties
+			return words[i].Word < words[j].Word
 		}
-		return words[i].Count > words[j].Count // Descending count
+		return words[i].Count > words[j].Count
 	})
-}
-
-// cleanWord normalizes and cleans a word
-func cleanWord(word string) string {
-	// Convert to lowercase
-	word = strings.ToLower(word)
-
-	// Remove punctuation and special characters
-	word = strings.Map(func(r rune) rune {
-		if unicode.IsLetter(r) {
-			return r
-		}
-		return -1
-	}, word)
-
-	// Trim spaces
-	word = strings.TrimSpace(word)
-
-	return word
 }

@@ -4,7 +4,7 @@ rateLimit:
   burst: 10
 
 # Number of concurrent goroutines for fetching articles
-concurrency: 4
+concurrency: 10
 
 # URLs configuration
 urls:
