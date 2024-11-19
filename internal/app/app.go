@@ -33,16 +33,21 @@ func New(cfg *config.Config) (*App, error) {
 
 	// Create fetcher config
 	fetcherConfig := fetcher.FetcherConfig{
-		RequestsPerSecond:  cfg.RateLimit.RequestsPerSecond,
-		Burst:              cfg.RateLimit.Burst,
-		MinRequestInterval: 2 * time.Second,
-		MaxRequestInterval: 5 * time.Second,
-		Timeout:            time.Duration(cfg.HTTPClient.Timeout) * time.Second,
-		UserAgent:          cfg.HTTPClient.UserAgent,
+		RequestsPerSecond:    cfg.RateLimit.RequestsPerSecond,
+		Burst:                cfg.RateLimit.Burst,
+		MinRequestInterval:   2 * time.Second,
+		MaxRequestInterval:   5 * time.Second,
+		Timeout:              time.Duration(cfg.HTTPClient.Timeout) * time.Second,
+		UserAgent:            cfg.HTTPClient.UserAgent,
+		ProxyRefreshInterval: 1 * time.Minute,
 	}
 
 	// Initialize components
-	f := fetcher.New(fetcherConfig)
+	f, err := fetcher.New(fetcherConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize fetcher: %w", err)
+	}
+
 	p := parser.New()
 	wb := wordbank.New()
 
