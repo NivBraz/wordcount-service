@@ -27,6 +27,10 @@ func (p *Parser) ParseWords(content []byte) ([]string, error) {
 	var words []string
 	var extractText func(*html.Node)
 	extractText = func(n *html.Node) {
+		// if its script or style ignore
+		if n.Type == html.ElementNode && (n.Data == "script" || n.Data == "style") {
+			return
+		}
 		if n.Type == html.TextNode {
 			// Split text into words
 			text := strings.Fields(n.Data)

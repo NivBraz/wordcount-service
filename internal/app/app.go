@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -136,7 +135,7 @@ func (a *App) Run(ctx context.Context) (*models.Result, error) {
 
 			// Fetch and process article
 			if err := a.processArticle(ctx, url, wordChan); err != nil {
-				log.Printf("Error processing article %s: %v", url, err)
+				//log.Printf("Error processing article %s: %v", url, err)
 				errChan <- fmt.Errorf("failed to process %s: %w", url, err)
 			}
 

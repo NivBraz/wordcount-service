@@ -49,7 +49,7 @@ var defaultUserAgents = []string{
 
 func New(config FetcherConfig) *Fetcher {
 	if config.MaxRetries == 0 {
-		config.MaxRetries = 3
+		config.MaxRetries = 1
 	}
 	if config.InitialBackoff == 0 {
 		config.InitialBackoff = 1 * time.Second
